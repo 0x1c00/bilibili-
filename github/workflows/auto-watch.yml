@@ -1,0 +1,42 @@
+name: Auto Watch Bilibili Video
+
+on:
+  schedule:
+    - cron: "0 2 * * *"   # 每天 10:00 UTC（北京时间 18:00）
+  workflow_dispatch:
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run Puppeteer script
+        id: run-script
+        run: node scripts/watch.js
+        env:
+          BILI_COOKIES: ${{ secrets.BILI_COOKIES }}
+
+      - name: Send email if failed
+        if: failure()
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com   # 可换成 QQ / 163 / Outlook
+          server_port: 465
+          username: ${{ secrets.MAIL_USERNAME }}
+          password: ${{ secrets.MAIL_PASSWORD }}
+          subject: "⚠️ Bilibili Cookie 已失效"
+          to: your@email.com
+          from: GitHub Actions <your@email.com>
+          body: |
+            检测到 Bilibili Cookie 已失效，请更新仓库 Secrets 中的 BILI_COOKIES。
